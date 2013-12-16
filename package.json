@@ -8,7 +8,7 @@
   "repository": { "type":"git", "url":"https://github.com/SheetJS/j.git" },
   "license": "Apache-2.0",
   "dependencies": {
-    "xlsjs": "http://github.com/notatestuser/js-xls/archive/master.tar.gz",
-    "xlsx": "http://github.com/notatestuser/js-xlsx/archive/master.tar.gz"
+    "xlsjs": "http://github.com/Spotme/js-xls/archive/master.tar.gz",
+    "xlsx": "http://github.com/Spotme/js-xlsx/archive/master.tar.gz"
   }
 }
