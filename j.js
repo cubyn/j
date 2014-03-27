@@ -1,9 +1,15 @@
 /* j -- (C) 2013-2014 SheetJS -- http://sheetjs.com */
 /* vim: set ts=2: */
 /*jshint node:true */
-var XLSX = require('xlsx');
-var XLS = require('xlsjs');
-var fs = require('fs');
+var XLSX       = require('xlsx');
+var XLS        = require('xlsjs');
+var fs         = require('fs');
+var utils_exts = require('./spotme-utils-extensions');
+
+// embellish utils with sheet_to_row_object_array_with_column_index_props
+utils_exts.extendXLS  (XLS);
+utils_exts.extendXLSX (XLSX);
+
 var readFileSync = function(filename, options) {
 	var f = fs.readFileSync(filename);
 	switch(f[0]) {
@@ -32,7 +38,8 @@ function to_json(w, raw) {
 	var XL = w[0], workbook = w[1];
 	var result = {};
 	workbook.SheetNames.forEach(function(sheetName) {
-		var roa = XL.utils.sheet_to_row_object_array(workbook.Sheets[sheetName], {raw:raw});
+		var roa = XL.utils.sheet_to_row_object_array_with_column_index_props(
+            workbook.Sheets[sheetName], {raw:raw});
 		if(roa.length > 0) result[sheetName] = roa;
 	});
 	return result;
