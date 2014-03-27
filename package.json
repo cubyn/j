@@ -9,8 +9,8 @@
   },
   "main": "./j",
   "dependencies": {
-    "xlsjs": "http://github.com/Spotme/js-xls/archive/master.tar.gz",
-    "xlsx": "http://github.com/Spotme/js-xlsx/archive/master.tar.gz",
+    "xlsjs": "~0.6.13",
+    "xlsx": "~0.5.13",
     "commander":""
   },
   "devDependencies": {
