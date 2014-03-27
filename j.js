@@ -11,25 +11,51 @@ utils_exts.extendXLS  (XLS);
 utils_exts.extendXLSX (XLSX);
 
 var readFileAsync = function(filename, options, callback) {
+    options = options || {};
+    function isValidMagicNumber(b) {
+        return (b === 0xd0 || b === 0x3c || b === 0x50);
+    }
     fs.open(filename, 'r', function(status, fd) {
         if (status) {
             console.error('fd status exception', status.message);
             return callback(error(status.message));
         }
-        var buffer = new Buffer(1);
-        fs.read(fd, buffer, 0, 1, 0, function(err, num) {
-            if (err) {
-                return callback(err);
+        fs.read(fd, new Buffer(1), 0, 1, null,
+        function(err, __bytesRead, firstbuf) {
+            var buffers = [firstbuf]
+              ;
+            if (err || ! isValidMagicNumber(firstbuf[0])) {
+                return callback(err || Error('Invalid file type'));
             }
-            switch(buffer[0]) {
-                /* CFB container */
-                case 0xd0: return callback(null, [XLS,   XLS.readFile(filename, options)]);
-                /* XML container (assumed 2003/2004) */
-                case 0x3c: return callback(null, [XLS,   XLS.readFile(filename, options)]);
-                /* Zip container */
-                case 0x50: return callback(null, [XLSX, XLSX.readFile(filename, options)]);
+            function cb(doneCb, _err, bytesRead, buf) {
+                var didRead = typeof bytesRead === 'number';
+                if (_err) {
+                    return callback(_err);
+                }
+                if (didRead && bytesRead < 1024) {
+                    buffers.push(buf.slice(0, bytesRead));
+                    doneCb(Buffer.concat(buffers));
+                    fs.close(fd);
+                } else {
+                    if (buf) {
+                        buffers.push(buf);
+                    }
+                    fs.read(fd, new Buffer(1024), 0, 1024, null, cb.bind(this, doneCb));
+                }
             }
-            return callback(error('unrecognized file type'), [undefined, buffer]);
+            cb(function(bigbuf) {
+                var strbuf = bigbuf.toString('base64');
+                options.type = 'base64';
+                switch(bigbuf[0]) {
+                    /* CFB container */
+                    case 0xd0: return callback(null, [XLS,   XLS.read(strbuf, options)]);
+                    /* XML container (assumed 2003/2004) */
+                    case 0x3c: return callback(null, [XLS,   XLS.read(strbuf, options)]);
+                    /* Zip container */
+                    case 0x50: return callback(null, [XLSX, XLSX.read(strbuf, options)]);
+                }
+                return callback(error('unrecognized file type'), [undefined, strbuf]);
+            });
         });
     });
 };
