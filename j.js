@@ -21,7 +21,7 @@ var readFileAsync = function(filename, options, callback) {
             return callback(error(status.message));
         }
         fs.read(fd, new Buffer(1), 0, 1, null,
-        function(err, __bytesRead, firstbuf) {
+        function(err, totalBytesRead, firstbuf) {
             var buffers = [firstbuf]
               ;
             if (err || ! isValidMagicNumber(firstbuf[0])) {
@@ -32,16 +32,15 @@ var readFileAsync = function(filename, options, callback) {
                 if (_err) {
                     return callback(_err);
                 }
+                totalBytesRead += (didRead ? bytesRead : 0);
                 if (didRead && bytesRead < 1024) {
                     buffers.push(buf.slice(0, bytesRead));
-                    doneCb(Buffer.concat(buffers));
-                    fs.close(fd);
-                } else {
-                    if (buf) {
-                        buffers.push(buf);
-                    }
-                    fs.read(fd, new Buffer(1024), 0, 1024, null, cb.bind(this, doneCb));
+                    doneCb(Buffer.concat(buffers, totalBytesRead));
+                    return fs.close(fd);
+                } else if (buf) {
+                    buffers.push(buf);
                 }
+                fs.read(fd, new Buffer(1024), 0, 1024, null, cb.bind(this, doneCb));
             }
             cb(function(bigbuf) {
                 var strbuf = bigbuf.toString('base64');
