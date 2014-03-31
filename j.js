@@ -27,7 +27,7 @@ var readFileAsync = function(filename, options, callback) {
             if (err || ! isValidMagicNumber(firstbuf[0])) {
                 return callback(err || Error('Invalid file type'));
             }
-            function cb(doneCb, _err, bytesRead, buf) {
+            function readChunk(doneCb, _err, bytesRead, buf) {
                 var didRead = typeof bytesRead === 'number';
                 if (_err) {
                     return callback(_err);
@@ -40,9 +40,9 @@ var readFileAsync = function(filename, options, callback) {
                 } else if (buf) {
                     buffers.push(buf);
                 }
-                fs.read(fd, new Buffer(1024), 0, 1024, null, cb.bind(this, doneCb));
+                fs.read(fd, new Buffer(1024), 0, 1024, null, readChunk.bind(this, doneCb));
             }
-            cb(function(bigbuf) {
+            readChunk(function(bigbuf) {
                 var strbuf = bigbuf.toString('base64');
                 options.type = 'base64';
                 switch(bigbuf[0]) {
