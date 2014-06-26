@@ -178,10 +178,18 @@ function to_xml(w) {
 	return lst;
 }
 
-function to_clit(w, s) {
-	var t = to_dsv(w, "\u2603","\u2604")[s].split("\u2604").map(function(s) { return s.split("\u2603").map(function(k) { return k.replace(/^"/,"").replace(/"$/,""); }); });
-	return t;
+function to_xlsx_factory(t) {
+	return function(w, o) {
+		o = o || {}; o.bookType = t;
+		if(typeof o.bookSST === 'undefined') o.bookSST = true;
+		if(typeof o.type === 'undefined') o.type = 'buffer';
+		return XLSX.write(w[1], o);
+	}
 }
+
+var to_xlsx = to_xlsx_factory('xlsx');
+var to_xlsm = to_xlsx_factory('xlsm');
+var to_xlsb = to_xlsx_factory('xlsb');
 
 module.exports = {
 	XLSX: XLSX,
@@ -192,10 +200,12 @@ module.exports = {
 		to_csv: to_dsv,
 		to_dsv: to_dsv,
 		to_xml: to_xml,
+		to_xlsx: to_xlsx,
+		to_xlsm: to_xlsm,
+		to_xlsb: to_xlsb,
 		to_json: to_json,
 		to_html: to_html,
 		to_formulae: to_formulae,
-		to_clit: to_clit,
 		get_cols: get_cols
 	},
 	version: "XLS " + XLS.version + " ; XLSX " + XLSX.version
