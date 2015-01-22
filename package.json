@@ -10,7 +10,7 @@
   "main": "./j",
   "dependencies": {
     "xlsjs": "~0.6.20",
-    "xlsx": "~0.7.6",
+    "xlsx": "0.7.11",
     "commander":""
   },
   "devDependencies": {
