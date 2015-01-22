@@ -45,13 +45,17 @@ var readFileAsync = function(filename, options, callback) {
             readChunk(function(bigbuf) {
                 var strbuf = bigbuf.toString('base64');
                 options.type = 'base64';
-                switch(bigbuf[0]) {
-                    /* CFB container */
-                    case 0xd0: return callback(null, [XLS,   XLS.read(strbuf, options)]);
-                    /* XML container (assumed 2003/2004) */
-                    case 0x3c: return callback(null, [XLS,   XLS.read(strbuf, options)]);
-                    /* Zip container */
-                    case 0x50: return callback(null, [XLSX, XLSX.read(strbuf, options)]);
+                try {
+                    switch(bigbuf[0]) {
+                        /* CFB container */
+                        case 0xd0: return callback(null, [XLS,   XLS.read(strbuf, options)]);
+                        /* XML container (assumed 2003/2004) */
+                        case 0x3c: return callback(null, [XLS,   XLS.read(strbuf, options)]);
+                        /* Zip container */
+                        case 0x50: return callback(null, [XLSX, XLSX.read(strbuf, options)]);
+                    }
+                } catch (_err) {
+                    return callback(_err);
                 }
                 return callback(error('unrecognized file type'), [undefined, strbuf]);
             });
