@@ -1,10 +1,5 @@
 /* j -- (C) 2013-2014 SheetJS -- http://sheetjs.com */
 /* vim: set ts=2: */
-/*jshint node:true, eqnull:true */
-var XLSX = require('xl'+'sx');
-var XLS = require('xl'+'sjs');
-var HARB = require('ha'+'rb');
-var UTILS = XLSX.utils;
 
 var libs = [
 	["XLS", XLS],
@@ -12,7 +7,70 @@ var libs = [
 	["HARB", HARB]
 ];
 
-var fs = require('f'+'s');
+/*jshint node:true */
+var XLSX       = require('xlsx');
+var XLS        = require('xlsjs');
+var HARB 	   = require('harb');
+var fs         = require('fs');
+var utils_exts = require('./spotme-utils-extensions');
+
+// embellish utils with sheet_to_row_object_array_with_column_index_props
+utils_exts.extendXLS  (XLS);
+utils_exts.extendXLSX (XLSX);
+
+var readFileAsync = function(filename, options, callback) {
+    options = options || {};
+    function isValidMagicNumber(b) {
+        return (b === 0xd0 || b === 0x3c || b === 0x50);
+    }
+    fs.open(filename, 'r', function(status, fd) {
+        if (status) {
+            console.error('fd status exception', status.message);
+            return callback(error(status.message));
+        }
+        fs.read(fd, new Buffer(1), 0, 1, null,
+        function(err, totalBytesRead, firstbuf) {
+            var buffers = [firstbuf]
+              ;
+            if (err || ! isValidMagicNumber(firstbuf[0])) {
+                return callback(err || Error('Invalid file type'));
+            }
+            function readChunk(doneCb, _err, bytesRead, buf) {
+                var didRead = typeof bytesRead === 'number';
+                if (_err) {
+                    return callback(_err);
+                }
+                totalBytesRead += (didRead ? bytesRead : 0);
+                if (didRead && bytesRead < 1024) {
+                    buffers.push(buf.slice(0, bytesRead));
+                    doneCb(Buffer.concat(buffers, totalBytesRead));
+                    return fs.close(fd);
+                } else if (buf) {
+                    buffers.push(buf);
+                }
+                fs.read(fd, new Buffer(1024), 0, 1024, null, readChunk.bind(this, doneCb));
+            }
+            readChunk(function(bigbuf) {
+                var strbuf = bigbuf.toString('base64');
+                options.type = 'base64';
+                try {
+                    switch(bigbuf[0]) {
+                        /* CFB container */
+                        case 0xd0: return callback(null, [XLS,   XLS.read(strbuf, options)]);
+                        /* XML container (assumed 2003/2004) */
+                        case 0x3c: return callback(null, [XLS,   XLS.read(strbuf, options)]);
+                        /* Zip container */
+                        case 0x50: return callback(null, [XLSX, XLSX.read(strbuf, options)]);
+                    }
+                } catch (_err) {
+                    return callback(_err);
+                }
+                return callback(error('unrecognized file type'), [undefined, strbuf]);
+            });
+        });
+    });
+};
+
 var readFileSync = function(filename, options) {
 	var f = fs.readFileSync(filename);
 	switch(f[0]) {
@@ -56,7 +114,8 @@ function to_json(w, raw) {
 	if(!XL.utils.sheet_to_row_object_array) XL = XLSX;
 	var result = {};
 	workbook.SheetNames.forEach(function(sheetName) {
-		var roa = XL.utils.sheet_to_row_object_array(workbook.Sheets[sheetName], {raw:raw});
+		var roa = XL.utils.sheet_to_row_object_array_with_column_index_props(
+            workbook.Sheets[sheetName], {raw:raw});
 		if(roa.length > 0) result[sheetName] = roa;
 	});
 	return result;
@@ -327,11 +386,22 @@ var utils = {
 };
 var J = {
 	XLSX: XLSX,
-	XLS: XLS,
-	readFile:readFileSync,
-	read:read,
-	utils: utils,
-	version: version
+	XLS:  XLS,
+	readFile:      readFileSync,
+    readFileAsync: readFileAsync,
+	utils: {
+		to_csv: to_dsv,
+		to_dsv: to_dsv,
+		to_xml: to_xml,
+		to_xlsx: to_xlsx,
+		to_xlsm: to_xlsm,
+		to_xlsb: to_xlsb,
+		to_json: to_json,
+		to_html: to_html,
+		to_formulae: to_formulae,
+		get_cols: get_cols
+	},
+	version: "XLS " + XLS.version + " ; XLSX " + XLSX.version
 };
 
 if(typeof module !== 'undefined') module.exports = J;
