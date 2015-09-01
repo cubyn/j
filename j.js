@@ -1,5 +1,8 @@
 /* j -- (C) 2013-2014 SheetJS -- http://sheetjs.com */
 /* vim: set ts=2: */
+var XLSX       = require('xlsx');
+var XLS        = require('xlsjs');
+var HARB 	   = require('harb');
 
 var libs = [
 	["XLS", XLS],
@@ -8,9 +11,6 @@ var libs = [
 ];
 
 /*jshint node:true */
-var XLSX       = require('xlsx');
-var XLS        = require('xlsjs');
-var HARB 	   = require('harb');
 var fs         = require('fs');
 var utils_exts = require('./spotme-utils-extensions');
 
